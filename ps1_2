@@ -1,0 +1,109 @@
+clearScreen.
+//lock == #define
+lock v to ship:orbit:velocity:orbit.           //орбитальная скорость
+//vxcl(v1, v2) - проекция вектора v2 на плоскость, нормальную к v1
+lock vh to vxcl(ship:up:vector, v):mag.        //скалярная горизонтальная скорость
+lock vv to (v - vxcl(ship:up:vector, v)):mag.  //скалярная вертикальная скорость
+lock rad to ship:body:radius + ship:altitude.  //полный радиус
+lock v1 to sqrt(ship:body:Mu / rad).           //первая косм. на текущей высоте.
+lock g to ship:body:Mu / rad^2.                //ускорение свободного падения на текущей высоте
+lock aCentr to Vh^2 / rad.                     //центробежное ускорение
+lock aThrust to ship:availableThrust           //текущая доступная тяга
+lock aEng to (throttle * aThrust) / ship:mass. //ускорение тяги
+
+function display {
+  clearscreen.
+  print "Высота: " + altitude + " м".
+  print "Полный радиус: " + rad + " м".
+  print "Тангаж: " + angle.
+  print "Орбитальная скорость: " + v:mag + " м/c".
+  print "Верт. скорость: " + vv + " м/c".
+  print "Гор. скорость: " + vh + " м/c".
+  print "Первая косм. скорость: " + v1 + " м/c".
+}
+
+set angle to 90.
+lock steering to heading(90,angle).
+set throttle to 0.5.
+stage.
+wait 3.
+stage.
+
+until altitude > 1000 {
+  display().
+  wait 0.33.
+}
+set angle to 87.
+
+until altitude > 7000 {
+  display().
+  wait 0.33.
+}
+
+set linearK to 1 / 12000.
+set linearB to -linearK*altitude.
+until angle <= 35 {
+  display().
+  set angle to 87-52*(linearK * altitude + linearB).
+  wait 0.1.
+}
+
+until stage:resources[1]:amount = 0 {
+  display().
+  wait 0.33.
+}
+wait 0.5.
+stage.
+wait 3.
+set throttle to 0.35.
+until orbit:apoapsis > 90000 {
+  display().
+  wait 0.33.
+}
+set angle to 0.5.
+wait 3.
+
+//Аппроксимация времени до достижения...
+lock t1 to (v1-vh) / (aEng * cos(angle)).        //...первой космической скорости по горизонтали
+lock t2 to -vv / (aCentr + aEng*sin(angle) - g). //...нулевой вертикальной скорости
+
+//Наклонение ракеты к Земле (отрицательный тангаж)
+//с целью достижения апоцентра (который впоследствие станет перицентром)
+//в момент набора первой космической скорости
+until vv < 50 {
+  if ((t2 + 5) > t1) {
+    set angle to angle - 0.5.
+  }
+  display().
+  wait 0.15.
+}
+
+set angle to 0.
+wait 2.
+
+until (orbit:periapsis > 72000) and (orbit:apoapsis > 200000) {
+  display().
+  wait 0.33.
+}
+set throttle to 0.0.
+
+clearscreen.
+print "Низкая околокёрбиновская орбита достигнута.".
+print "Апоцентр: " + orbit:apoapsis/1000 + " км".
+print "Перицентр: " + orbit:periapsis/1000 + " км".
+print "Наклон орбиты: " + orbit:inclination.
+wait 1.
+print "Подготовка к запуску спутника.".
+wait 3.
+STAGE.
+wait 5.
+STAGE.
+print "Спутник запущен.".
+
+wait 3.
+set commList to ship:partsTagged("commutron").
+for comm in commList {
+  comm:getModule("ModuleDeployableAntenna"):doEvent("раскрыть антенну").
+}
+wait 3.
+print "Бип-бип... бип-бип...".

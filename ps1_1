@@ -1,0 +1,86 @@
+CLEARSCREEN.
+WAIT 1.
+LOCK STEERING TO HEADING(90, 90).
+LOCK THROTTLE TO 0.7.
+STAGE.
+
+SET countDown TO 3.
+PRINT "Взлёт через:".
+UNTIL countDown = 0 {
+  PRINT countDown.
+  SET countDown TO countDown - 1.
+  WAIT 1.
+}
+CLEARSCREEN.
+PRINT "Ракета запущена. Набор высоты.".
+STAGE.
+
+WAIT UNTIL ALTITUDE > 1000.
+SET angle TO 87.
+LOCK STEERING TO HEADING(90, angle).
+
+WAIT UNTIL ALTITUDE > 5000.
+
+
+SET linearK TO 1 / 5000.
+SET linearB TO -linearK*ALTITUDE.
+UNTIL angle <= 40 {
+  CLEARSCREEN.
+  SET angle TO max(40,90-50*(linearK * ALTITUDE + linearB)).
+  PRINT "Отклонение.".
+  PRINT "Угол наклона: " + angle.
+  LOCK STEERING TO HEADING(90, angle).
+  WAIT 0.1.
+}
+
+WAIT UNTIL STAGE:RESOURCES[1]:AMOUNT = 0.
+STAGE.
+LOCK THROTTLE TO 0.6.
+
+PRINT "APOAPSIS: " + ORBIT:APOAPSIS.
+SET linearK TO 1 / (95000-ORBIT:APOAPSIS).
+SET linearB TO -linearK*ORBIT:APOAPSIS.
+UNTIL ORBIT:APOAPSIS > 95000 {
+  CLEARSCREEN.
+  SET angle TO max(0,40-40*(ORBIT:APOAPSIS*linearK + linearB)).
+  PRINT "Отклонение до горизонта.".
+  PRINT "Угол наклона: " + angle.
+  LOCK STEERING TO HEADING(90, angle).
+  WAIT 0.1.
+}
+
+WAIT 3.
+LOCK THROTTLE TO 0.05.
+UNTIL ETA:APOAPSIS < 1 {
+  CLEARSCREEN.
+  PRINT "Ожидания достижения апоцентра: " + ETA:APOAPSIS.
+  WAIT 0.1.
+}
+
+CLEARSCREEN.
+PRINT "Корректировка орбиты.".
+LOCK STEERING TO HEADING(90, 0).
+LOCK THROTTLE TO 0.5.
+WAIT UNTIL (ORBIT:APOAPSIS > 200000) and (ORBIT:PERIAPSIS > 72000).
+LOCK THROTTLE TO 0.
+
+CLEARSCREEN.
+PRINT "Низкая околокербиновская орбита достигнута.".
+PRINT "Апоцентр: " + ORBIT:APOAPSIS/1000 + " км".
+PRINT "Перицентр: " + ORBIT:PERIAPSIS/1000 + " км".
+PRINT "Наклон орбиты: " + ORBIT:INCLINATION.
+WAIT 1.
+PRINT "Подготовка к запуску спутника.".
+WAIT 3.
+STAGE.
+WAIT 5.
+STAGE.
+PRINT "Спутник запущен.".
+
+WAIT 3.
+SET commList TO SHIP:PARTSTAGGED("commutron").
+FOR comm IN commList {
+  comm:GETMODULE("ModuleDeployableAntenna"):DOEVENT("раскрыть антенну").
+}
+WAIT 3.
+PRINT "Бип-бип... бип-бип...".
