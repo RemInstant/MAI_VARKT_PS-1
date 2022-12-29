@@ -22,8 +22,10 @@ function display {
   print "Первая косм. скорость: " + v1 + " м/c".
 }
 
+//Установка рысканья и тангажа соответственно
 set angle to 90.
 lock steering to heading(90,angle).
+//Установка тяги в 50% 
 set throttle to 0.5.
 stage.
 wait 3.
@@ -40,6 +42,8 @@ until altitude > 7000 {
   wait 0.33.
 }
 
+//Линейное изменение тангажа
+//с 87 на высоте 7км до 35 на высоте 19км
 set linearK to 1 / 12000.
 set linearB to -linearK*altitude.
 until angle <= 35 {
@@ -48,6 +52,8 @@ until angle <= 35 {
   wait 0.1.
 }
 
+//Отделение 1 ступени ракеты,
+//как только в ней кончится топливо
 until stage:resources[1]:amount = 0 {
   display().
   wait 0.33.
@@ -55,6 +61,8 @@ until stage:resources[1]:amount = 0 {
 wait 0.5.
 stage.
 wait 3.
+
+//Набор апоцентра в 90 км
 set throttle to 0.35.
 until orbit:apoapsis > 90000 {
   display().
@@ -81,6 +89,7 @@ until vv < 50 {
 set angle to 0.
 wait 2.
 
+//набор апоцентра в 200+ км и перицентра в 72+ км
 until (orbit:periapsis > 72000) and (orbit:apoapsis > 200000) {
   display().
   wait 0.33.
@@ -101,6 +110,7 @@ STAGE.
 print "Спутник запущен.".
 
 wait 3.
+//Раскрытие антенн
 set commList to ship:partsTagged("commutron").
 for comm in commList {
   comm:getModule("ModuleDeployableAntenna"):doEvent("раскрыть антенну").
