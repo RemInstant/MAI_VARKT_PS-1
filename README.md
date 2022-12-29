@@ -1,3 +1,3 @@
 # MAI_VARKT_PS-1
-spacecraft autopilot for PS-1 mission
+Spacecraft autopilot for PS-1 mission<br>
 Main version - ps1_2
